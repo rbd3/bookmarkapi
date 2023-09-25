@@ -14,6 +14,9 @@ require 'rails_helper'
 
 describe 'POST /bookmarks' do
   # 'scenario' is similar to 'it', use which you see fit
+
+  context 'authenticated user' do
+  let!(:user) { User.create(username: 'soulchild', authentication_token: 'abcdef') }
   
   scenario 'valid bookmark attributes' do
     # send a POST request to /bookmarks, with these parameters
@@ -23,7 +26,7 @@ describe 'POST /bookmarks' do
         url: 'https://rubyyagi.com',
         title: 'RubyYagi blog'
       }
-    }
+    }, headers: { 'X-Username': user.username, 'X-Token': user.authentication_token }
 
     # response should have HTTP Status 201 Created
     expect(response.status).to eq(201)
@@ -47,7 +50,8 @@ describe 'POST /bookmarks' do
         url: '',
         title: 'RubyYagi blog'
       }
-    }
+    }, headers: { 'X-Username': user.username, 'X-Token': user.authentication_token }
+
 
     # response should have HTTP Status 201 Created
     expect(response.status).to eq(422)
@@ -58,4 +62,23 @@ describe 'POST /bookmarks' do
     # no new bookmark record is created
     expect(Bookmark.count).to eq(0)
   end
+end
+
+context 'unauthenticated user' do
+  it 'should return forbidden error' do
+    post '/bookmarks', params: {
+      bookmark: {
+        url: 'https://rubyyagi.com',
+        title: 'RubyYagi blog'
+      }
+    }
+
+    # response should have HTTP Status 403 Forbidden
+    expect(response.status).to eq(403)
+    
+    # response contain error message
+    json = JSON.parse(response.body).deep_symbolize_keys
+    expect(json[:message]).to eq('Invalid User')
+  end
+end
 end
