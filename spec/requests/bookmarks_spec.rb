@@ -12,116 +12,50 @@ require 'rails_helper'
 # of tools you can use to make these specs even more expressive, but we're
 # sticking to rails and rspec-rails APIs to keep things simple and stable.
 
-RSpec.describe "/bookmarks", type: :request do
-  # This should return the minimal set of attributes required to create a valid
-  # Bookmark. As you add validations to Bookmark, be sure to
-  # adjust the attributes here as well.
-  let(:valid_attributes) {
-    skip("Add a hash of attributes valid for your model")
-  }
-
-  let(:invalid_attributes) {
-    skip("Add a hash of attributes invalid for your model")
-  }
-
-  # This should return the minimal set of values that should be in the headers
-  # in order to pass any filters (e.g. authentication) defined in
-  # BookmarksController, or in your router and rack
-  # middleware. Be sure to keep this updated too.
-  let(:valid_headers) {
-    {}
-  }
-
-  describe "GET /index" do
-    it "renders a successful response" do
-      Bookmark.create! valid_attributes
-      get bookmarks_url, headers: valid_headers, as: :json
-      expect(response).to be_successful
-    end
-  end
-
-  describe "GET /show" do
-    it "renders a successful response" do
-      bookmark = Bookmark.create! valid_attributes
-      get bookmark_url(bookmark), as: :json
-      expect(response).to be_successful
-    end
-  end
-
-  describe "POST /create" do
-    context "with valid parameters" do
-      it "creates a new Bookmark" do
-        expect {
-          post bookmarks_url,
-               params: { bookmark: valid_attributes }, headers: valid_headers, as: :json
-        }.to change(Bookmark, :count).by(1)
-      end
-
-      it "renders a JSON response with the new bookmark" do
-        post bookmarks_url,
-             params: { bookmark: valid_attributes }, headers: valid_headers, as: :json
-        expect(response).to have_http_status(:created)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-    end
-
-    context "with invalid parameters" do
-      it "does not create a new Bookmark" do
-        expect {
-          post bookmarks_url,
-               params: { bookmark: invalid_attributes }, as: :json
-        }.to change(Bookmark, :count).by(0)
-      end
-
-      it "renders a JSON response with errors for the new bookmark" do
-        post bookmarks_url,
-             params: { bookmark: invalid_attributes }, headers: valid_headers, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-    end
-  end
-
-  describe "PATCH /update" do
-    context "with valid parameters" do
-      let(:new_attributes) {
-        skip("Add a hash of attributes valid for your model")
+describe 'POST /bookmarks' do
+  # 'scenario' is similar to 'it', use which you see fit
+  
+  scenario 'valid bookmark attributes' do
+    # send a POST request to /bookmarks, with these parameters
+    # The controller will treat them as JSON 
+    post '/bookmarks', params: {
+      bookmark: {
+        url: 'https://rubyyagi.com',
+        title: 'RubyYagi blog'
       }
+    }
 
-      it "updates the requested bookmark" do
-        bookmark = Bookmark.create! valid_attributes
-        patch bookmark_url(bookmark),
-              params: { bookmark: new_attributes }, headers: valid_headers, as: :json
-        bookmark.reload
-        skip("Add assertions for updated state")
-      end
+    # response should have HTTP Status 201 Created
+    expect(response.status).to eq(201)
 
-      it "renders a JSON response with the bookmark" do
-        bookmark = Bookmark.create! valid_attributes
-        patch bookmark_url(bookmark),
-              params: { bookmark: new_attributes }, headers: valid_headers, as: :json
-        expect(response).to have_http_status(:ok)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-    end
+    json = JSON.parse(response.body).deep_symbolize_keys
+    
+    # check the value of the returned response hash
+    expect(json[:url]).to eq('https://rubyyagi.com')
+    expect(json[:title]).to eq('RubyYagi blog')
 
-    context "with invalid parameters" do
-      it "renders a JSON response with errors for the bookmark" do
-        bookmark = Bookmark.create! valid_attributes
-        patch bookmark_url(bookmark),
-              params: { bookmark: invalid_attributes }, headers: valid_headers, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response.content_type).to match(a_string_including("application/json"))
-      end
-    end
+    # 1 new bookmark record is created
+    expect(Bookmark.count).to eq(1)
+
+    # Optionally, you can check the latest record data
+    expect(Bookmark.last.title).to eq('RubyYagi blog')
   end
 
-  describe "DELETE /destroy" do
-    it "destroys the requested bookmark" do
-      bookmark = Bookmark.create! valid_attributes
-      expect {
-        delete bookmark_url(bookmark), headers: valid_headers, as: :json
-      }.to change(Bookmark, :count).by(-1)
-    end
+  scenario 'invalid bookmark attributes' do
+    post '/bookmarks', params: {
+      bookmark: {
+        url: '',
+        title: 'RubyYagi blog'
+      }
+    }
+
+    # response should have HTTP Status 201 Created
+    expect(response.status).to eq(422)
+
+    json = JSON.parse(response.body).deep_symbolize_keys
+    expect(json[:url]).to eq(["can't be blank"])
+
+    # no new bookmark record is created
+    expect(Bookmark.count).to eq(0)
   end
 end
